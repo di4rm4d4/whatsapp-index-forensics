@@ -26,6 +26,8 @@ def render(report_path, destination, body_column="0", absent_only=False):
     cards = []
     for record in report["documents"]:
         present = record.get("present_in_current_content", record.get("present_in_current_content_or_docsize"))
+        if present is not None and type(present) is not bool:
+            raise ValueError("Invalid current-content presence value.")
         if absent_only and present is not False:
             continue
         terms = sorted({term for item in record["columns"].get(str(body_column), []) for term in item["terms"]})

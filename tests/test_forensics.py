@@ -265,6 +265,15 @@ class ReindexAndExport(Workspace):
         self.assertIn("&lt;script&gt;", text)
         self.assertIn("not original sentences", text)
 
+    def test_html_rejects_untrusted_presence_values(self):
+        _database, report, path = self.make_history()
+        report["documents"][0]["present_in_current_content"] = "<script>alert(1)</script>"
+        path.write_text(json.dumps(report))
+        target = self.root / "terms.html"
+        with self.assertRaises(ValueError):
+            export_terms.render(path, target)
+        self.assertFalse(target.exists())
+
     def test_search_treats_boolean_word_literally(self):
         _database, _report, path = self.make_history()
         target = self.root / "reindexed.sqlite"
@@ -305,6 +314,13 @@ class EvidenceSafety(Workspace):
         with self.assertRaises(ValueError):
             with forensic_io.snapshot(database):
                 pass
+
+    def test_analyzer_rejects_database_symlink(self):
+        database = make(self.root / "input" / "demo.sqlite")
+        linked = self.root / "linked.sqlite"
+        linked.symlink_to(database)
+        with self.assertRaises(ValueError):
+            fts34_history.examine(linked, "docs", self.root / "history")
 
     def test_database_inventory_contains_counts_only(self):
         database = self.root / "ordinary.sqlite"

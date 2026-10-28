@@ -1,0 +1,26 @@
+name: Checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  synthetic-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v
+  optional-backup-imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-capture.txt
+      - run: python -c "from pymobiledevice3.services.device_link import DeviceLink; from pymobiledevice3.services.mobilebackup2 import Mobilebackup2Service; from pyiosbackup.keybag import Keybag; from pyiosbackup.manifest_plist import ManifestPlist; import filtered_receiver"
+      - run: python capture_whatsapp.py --destination local/planned-capture
